@@ -81,10 +81,11 @@ class LaporanExportService
             'marginRight' => 1418,
         ]);
 
-        // Style
+        // Style definitions
         $boldStyle = ['bold' => true];
-        $centerPara = ['alignment' => Jc::CENTER];
-        $justifyPara = ['alignment' => Jc::BOTH];
+        $centerPara = ['alignment' => Jc::CENTER, 'spaceAfter' => 0];
+        $justifyPara = ['alignment' => Jc::BOTH, 'spaceAfter' => 120];
+        $leftPara = ['alignment' => Jc::LEFT, 'spaceAfter' => 120];
 
         // Header instansi dengan logo
         $h1 = $laporan->header_instansi_1 ?: 'KEMENTERIAN SOSIAL REPUBLIK INDONESIA';
@@ -94,36 +95,47 @@ class LaporanExportService
 
         // Buat tabel header dengan logo
         $logoAbsPath = public_path('logo-kemensos.png');
-        $headerTable = $section->addTable(['borderSize' => 0, 'borderColor' => 'ffffff', 'cellMargin' => 0]);
+        $headerTable = $section->addTable([
+            'borderSize' => 0,
+            'borderColor' => 'ffffff',
+            'cellMargin' => 0,
+            'width' => 100 * 50,
+            'unit' => 'pct',
+        ]);
         $headerTable->addRow();
 
         // Kolom logo
-        $logoCell = $headerTable->addCell(1500, ['borderSize' => 0, 'borderColor' => 'ffffff', 'valign' => 'center']);
+        $logoCell = $headerTable->addCell(1800, ['borderSize' => 0, 'borderColor' => 'ffffff', 'valign' => 'center']);
         if (file_exists($logoAbsPath)) {
-            // Konversi backslash ke forward slash untuk PhpWord di Windows
             $logoPathNormalized = str_replace('\\', '/', $logoAbsPath);
-            $logoCell->addImage($logoPathNormalized, ['width' => 60, 'height' => 60, 'alignment' => Jc::CENTER]);
+            $logoCell->addImage($logoPathNormalized, ['width' => 80, 'height' => 80, 'alignment' => Jc::CENTER]);
         }
 
         // Kolom teks header
-        $textCell = $headerTable->addCell(7500, ['borderSize' => 0, 'borderColor' => 'ffffff', 'valign' => 'center']);
-        $textCell->addText($h1, ['bold' => true, 'size' => 13], $centerPara);
-        $textCell->addText($h2, $boldStyle, $centerPara);
-        $textCell->addText($h3, $boldStyle, $centerPara);
+        $textCell = $headerTable->addCell(7200, ['borderSize' => 0, 'borderColor' => 'ffffff', 'valign' => 'center']);
+        $textCell->addText(strtoupper($h1), ['bold' => true, 'size' => 12], $centerPara);
+        $textCell->addText(strtoupper($h2), ['bold' => true, 'size' => 11], $centerPara);
+        $textCell->addText(strtoupper($h3), ['bold' => true, 'size' => 11], $centerPara);
         $textCell->addText($h4, ['size' => 9], $centerPara);
 
-        $section->addLine(['weight' => 3, 'width' => 9000, 'height' => 0, 'color' => '000000']);
+        // Garis pemisah dengan margin yang cukup dari tepi
+        $section->addLine([
+            'weight' => 2,
+            'width' => 450,
+            'height' => 0,
+            'color' => '000000',
+        ]);
         $section->addTextBreak(1);
 
-        // Judul
-        $section->addText('LAPORAN', $boldStyle, $centerPara);
-        $section->addText('SASARAN KINERJA PEGAWAI (SKP)', $boldStyle, $centerPara);
-        $section->addText(strtoupper($laporan->jenisRhk->nama), $boldStyle, $centerPara);
-        $section->addText('BULAN '.strtoupper($laporan->bulan).' TAHUN '.$laporan->tahun, $boldStyle, $centerPara);
+        // Judul - semuanya BOLD dan CENTER
+        $section->addText('LAPORAN', ['bold' => true, 'size' => 12], $centerPara);
+        $section->addText('SASARAN KINERJA PEGAWAI (SKP)', ['bold' => true, 'size' => 12], $centerPara);
+        $section->addText(strtoupper($laporan->jenisRhk->nama), ['bold' => true, 'size' => 12], $centerPara);
+        $section->addText('BULAN '.strtoupper($laporan->bulan).' TAHUN '.$laporan->tahun, ['bold' => true, 'size' => 12], $centerPara);
         $section->addTextBreak(1);
 
         // Isi laporan
-        $this->addSection($section, 'A. PENDAHULUAN', null, $boldStyle);
+        $this->addSection($section, 'A. PENDAHULUAN', null, $boldStyle, $leftPara);
         $this->addHtmlContent($section, '1. Umum', $laporan->latar_belakang, $boldStyle, $justifyPara);
         $this->addHtmlContent($section, '2. Maksud dan Tujuan', $laporan->maksud_tujuan, $boldStyle, $justifyPara);
         $this->addHtmlContent($section, '3. Ruang Lingkup', $laporan->ruang_lingkup, $boldStyle, $justifyPara);
@@ -136,7 +148,7 @@ class LaporanExportService
             $this->addSection($section, 'C. HASIL YANG DICAPAI', $laporan->hasil_dicapai, $boldStyle, $justifyPara);
         }
         if ($laporan->simpulan || $laporan->saran) {
-            $this->addSection($section, 'D. SIMPULAN DAN SARAN', null, $boldStyle);
+            $this->addSection($section, 'D. SIMPULAN DAN SARAN', null, $boldStyle, $leftPara);
             $this->addHtmlContent($section, '1. Simpulan', $laporan->simpulan, $boldStyle, $justifyPara);
             $this->addHtmlContent($section, '2. Saran', $laporan->saran, $boldStyle, $justifyPara);
         }
@@ -144,25 +156,25 @@ class LaporanExportService
             $this->addSection($section, 'E. PENUTUP', $laporan->penutup, $boldStyle, $justifyPara);
         }
 
-        // TTD
+        // TTD - Tanpa tabel, langsung align right
         if ($laporan->ttd_nama || $laporan->ttd_kota) {
             $section->addTextBreak(2);
-            $rightPara = ['alignment' => Jc::RIGHT];
+            $rightPara = ['alignment' => Jc::RIGHT, 'spaceAfter' => 0];
+
             if ($laporan->ttd_kota) {
-                $section->addText('Dibuat di '.$laporan->ttd_kota.',', [], $rightPara);
+                $section->addText('Dibuat di '.$laporan->ttd_kota.',', ['size' => 12], $rightPara);
             }
             if ($laporan->ttd_tanggal) {
-                $section->addText('Pada Tanggal '.$laporan->ttd_tanggal->translatedFormat('d F Y'), [], $rightPara);
+                $section->addText('Pada Tanggal '.$laporan->ttd_tanggal->translatedFormat('d F Y'), ['size' => 12], $rightPara);
             }
             if ($laporan->ttd_jabatan) {
-                $section->addText($laporan->ttd_jabatan, [], $rightPara);
+                $section->addText($laporan->ttd_jabatan, ['size' => 12], $rightPara);
             }
 
             // Gambar TTD
             if ($laporan->ttd_gambar) {
                 $ttdAbsPath = $this->resolveStoragePath($laporan->ttd_gambar);
                 if ($ttdAbsPath && file_exists($ttdAbsPath)) {
-                    // Konversi backslash ke forward slash untuk PhpWord di Windows
                     $ttdPathNormalized = str_replace('\\', '/', $ttdAbsPath);
                     $section->addImage($ttdPathNormalized, ['width' => 120, 'height' => 60, 'alignment' => Jc::RIGHT]);
                 }
@@ -171,31 +183,30 @@ class LaporanExportService
             }
 
             if ($laporan->ttd_nama) {
-                $section->addText($laporan->ttd_nama, ['bold' => true, 'underline' => Font::UNDERLINE_SINGLE], $rightPara);
+                $section->addText($laporan->ttd_nama, ['bold' => true, 'underline' => Font::UNDERLINE_SINGLE, 'size' => 12], $rightPara);
             }
             if ($laporan->ttd_nip) {
-                $section->addText('NIP. '.$laporan->ttd_nip, [], $rightPara);
+                $section->addText('NIP. '.$laporan->ttd_nip, ['size' => 12], $rightPara);
             }
         }
 
         // Dokumentasi foto
         if ($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0) {
             $section->addPageBreak();
-            $section->addText('DOKUMENTASI', $boldStyle, $centerPara);
+            $section->addText('DOKUMENTASI', ['bold' => true, 'size' => 12], $centerPara);
             $section->addTextBreak(1);
 
             foreach ($laporan->foto_dokumentasi as $foto) {
                 $fotoAbsPath = $this->resolveStoragePath($foto);
                 if ($fotoAbsPath && file_exists($fotoAbsPath)) {
-                    // Konversi backslash ke forward slash untuk PhpWord di Windows
                     $fotoPathNormalized = str_replace('\\', '/', $fotoAbsPath);
-                    $section->addImage($fotoPathNormalized, ['width' => 400, 'height' => 280, 'alignment' => Jc::CENTER]);
+                    $section->addImage($fotoPathNormalized, ['width' => 450, 'height' => 320, 'alignment' => Jc::CENTER]);
                     $section->addTextBreak(1);
                 }
             }
 
             if ($laporan->keterangan_dokumentasi) {
-                $section->addText($laporan->keterangan_dokumentasi, ['italic' => true], $centerPara);
+                $section->addText($laporan->keterangan_dokumentasi, ['italic' => true, 'size' => 11], $centerPara);
             }
         }
 
@@ -214,9 +225,9 @@ class LaporanExportService
 
     private function addSection(Section $section, string $title, ?string $htmlContent, array $boldStyle, array $parStyle = []): void
     {
-        $section->addText($title, $boldStyle);
+        $section->addText($title, $boldStyle, $parStyle);
         if ($htmlContent) {
-            $this->addHtmlContent($section, null, $htmlContent, [], $parStyle);
+            $this->addHtmlContent($section, null, $htmlContent, [], ['alignment' => Jc::BOTH, 'spaceAfter' => 120]);
         }
     }
 
@@ -226,14 +237,14 @@ class LaporanExportService
             return;
         }
         if ($subTitle) {
-            $section->addText($subTitle, $boldStyle);
+            $section->addText($subTitle, array_merge($boldStyle, ['size' => 12]), ['alignment' => Jc::LEFT, 'spaceAfter' => 120]);
         }
         // Strip HTML tags untuk DOCX (PhpWord HTML parser terbatas)
         $plain = strip_tags(str_replace(['</p>', '<br>', '<br/>', '<br />', '</li>'], "\n", $htmlContent));
         $plain = html_entity_decode($plain, ENT_QUOTES, 'UTF-8');
         $lines = array_filter(array_map('trim', explode("\n", $plain)));
         foreach ($lines as $line) {
-            $section->addText($line, [], $parStyle);
+            $section->addText($line, ['size' => 12], $parStyle);
         }
     }
 

@@ -9,21 +9,21 @@
         .page { padding: 2cm 2.5cm; }
 
         /* Header */
-        .header-table { width: 100%; border-bottom: 3px solid #000; margin-bottom: 16px; }
-        .header-logo { width: 80px; vertical-align: middle; }
+        .header-table { width: 100%; border-bottom: 2px solid #000; margin-bottom: 16px; padding-bottom: 8px; }
+        .header-logo { width: 120px; vertical-align: middle; }
         .header-text { text-align: center; vertical-align: middle; }
-        .header-text .line1 { font-size: 13pt; font-weight: bold; }
-        .header-text .line2, .header-text .line3 { font-size: 11pt; font-weight: bold; }
+        .header-text .line1 { font-size: 12pt; font-weight: bold; text-transform: uppercase; }
+        .header-text .line2, .header-text .line3 { font-size: 11pt; font-weight: bold; text-transform: uppercase; }
         .header-text .line4 { font-size: 9pt; }
 
         /* Judul */
         .judul { text-align: center; margin: 20px 0; }
-        .judul div { font-weight: bold; font-size: 12pt; }
+        .judul div { font-weight: bold; font-size: 12pt; text-transform: uppercase; }
 
         /* Konten */
-        .section-title { font-weight: bold; margin-top: 14px; margin-bottom: 4px; }
+        .section-title { font-weight: bold; margin-top: 14px; margin-bottom: 4px; text-transform: uppercase; }
         .sub-title { font-weight: bold; margin-top: 8px; margin-bottom: 2px; }
-        .content { text-align: justify; margin-bottom: 6px; }
+        .content { text-align: justify; margin-bottom: 6px; line-height: 1.6; }
         .content p { margin-bottom: 4px; }
         .content ul { padding-left: 20px; margin-bottom: 4px; }
         .content ol { padding-left: 20px; margin-bottom: 4px; }
@@ -41,7 +41,7 @@
         .dokumentasi-title { text-align: center; font-weight: bold; margin-top: 30px; margin-bottom: 12px; font-size: 12pt; }
         .foto-grid { width: 100%; }
         .foto-grid td { text-align: center; padding: 6px; vertical-align: top; }
-        .foto-grid img { max-width: 220px; max-height: 180px; }
+        .foto-grid img { max-width: 350px; max-height: 280px; }
         .foto-keterangan { text-align: center; font-style: italic; margin-top: 8px; font-size: 10pt; }
 
         /* Page break */
@@ -67,8 +67,8 @@
     <table class="header-table" cellpadding="0" cellspacing="0">
         <tr>
             @if ($logoBase64)
-                <td class="header-logo" style="width:80px;">
-                    <img src="{{ $logoBase64 }}" style="width:70px; height:auto;">
+                <td class="header-logo" style="width:120px;">
+                    <img src="{{ $logoBase64 }}" style="width:100px; height:auto;">
                 </td>
             @endif
             <td class="header-text">
@@ -84,7 +84,7 @@
     <div class="judul">
         <div>LAPORAN</div>
         <div>SASARAN KINERJA PEGAWAI (SKP)</div>
-        <div style="text-transform:uppercase;">{{ $laporan->jenisRhk->nama }}</div>
+        <div>{{ $laporan->jenisRhk->nama }}</div>
         <div>BULAN {{ strtoupper($laporan->bulan) }} TAHUN {{ $laporan->tahun }}</div>
     </div>
 
@@ -144,31 +144,26 @@
 
     {{-- Tanda Tangan --}}
     @if ($laporan->ttd_nama || $laporan->ttd_kota)
-        <table style="width:100%; margin-top:30px;" cellpadding="0" cellspacing="0">
-            <tr>
-                <td style="width:50%;"></td>
-                <td style="width:50%; text-align:left; padding-left:20px;">
-                    @if ($laporan->ttd_kota || $laporan->ttd_tanggal)
-                        <div>Dibuat di {{ $laporan->ttd_kota }},</div>
-                        <div>Pada Tanggal {{ $laporan->ttd_tanggal?->translatedFormat('d F Y') }}</div>
-                    @endif
-                    @if ($laporan->ttd_jabatan)
-                        <div>{{ $laporan->ttd_jabatan }}</div>
-                    @endif
-                    @if ($laporan->ttd_gambar && $ttdBase64)
-                        <div><img src="{{ $ttdBase64 }}" style="height:80px; margin:8px 0;"></div>
-                    @else
-                        <div style="height:80px;"></div>
-                    @endif
-                    @if ($laporan->ttd_nama)
-                        <div class="ttd-nama">{{ $laporan->ttd_nama }}</div>
-                    @endif
-                    @if ($laporan->ttd_nip)
-                        <div>NIP. {{ $laporan->ttd_nip }}</div>
-                    @endif
-                </td>
-            </tr>
-        </table>
+        <div style="margin-top:30px; margin-left:60%; text-align:left;">
+            @if ($laporan->ttd_kota || $laporan->ttd_tanggal)
+                <div>Dibuat di {{ $laporan->ttd_kota }},</div>
+                <div>Pada Tanggal {{ $laporan->ttd_tanggal?->translatedFormat('d F Y') }}</div>
+            @endif
+            @if ($laporan->ttd_jabatan)
+                <div>{{ $laporan->ttd_jabatan }}</div>
+            @endif
+            @if ($laporan->ttd_gambar && $ttdBase64)
+                <div><img src="{{ $ttdBase64 }}" style="height:80px; margin:8px 0;"></div>
+            @else
+                <div style="height:80px;"></div>
+            @endif
+            @if ($laporan->ttd_nama)
+                <div class="ttd-nama">{{ $laporan->ttd_nama }}</div>
+            @endif
+            @if ($laporan->ttd_nip)
+                <div>NIP. {{ $laporan->ttd_nip }}</div>
+            @endif
+        </div>
     @endif
 
     {{-- Dokumentasi Foto --}}

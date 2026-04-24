@@ -141,7 +141,7 @@
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
                 <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Tanda Tangan</h3>
                 <div class="flex justify-end">
-                    <div class="text-sm text-gray-800 dark:text-gray-200 text-right">
+                    <div class="text-sm text-gray-800 dark:text-gray-200 text-right" style="padding-left: 60%; min-width: 280px;">
                         @if ($laporan->ttd_kota || $laporan->ttd_tanggal)
                             <p>Dibuat di {{ $laporan->ttd_kota }},</p>
                             <p>Pada Tanggal {{ $laporan->ttd_tanggal?->translatedFormat('d F Y') }}</p>
