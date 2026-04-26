@@ -89,7 +89,7 @@ Aplikasi manajemen laporan untuk Aparatur Sipil Negara (ASN) berbasis Laravel 13
 - Ubuntu 22.04 LTS atau lebih baru
 - PHP 8.4 dengan extensions: mbstring, xml, curl, zip, gd, mysql, bcmath
 - MySQL 8.0
-- Nginx atau Apache
+- Nginx
 - Supervisor (untuk queue worker)
 - Cron (untuk scheduler)
 
@@ -193,8 +193,8 @@ sudo mysql -u root -p
 ```
 ```sql
 CREATE DATABASE laporan_asn CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'laporan_user'@'localhost' IDENTIFIED BY 'password_kuat_anda';
-GRANT ALL PRIVILEGES ON laporan_asn.* TO 'laporan_user'@'localhost';
+CREATE USER 'systemasn26'@'localhost' IDENTIFIED BY 'System@SN2026';
+GRANT ALL PRIVILEGES ON laporan_asn.* TO 'systemasn26'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -301,7 +301,7 @@ php artisan event:cache
 
 #### 3.1 Buat Konfigurasi Site
 ```bash
-sudo nano /etc/nginx/sites-available/laporan-asn
+sudo nano /etc/nginx/sites-available/toolrhk.web.id
 ```
 
 Paste konfigurasi berikut:
@@ -309,7 +309,7 @@ Paste konfigurasi berikut:
 server {
     listen 80;
     listen [::]:80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name toolrhk.web.id www.toolrhk.web.id;
     root /var/www/laporan-asn/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
@@ -346,7 +346,7 @@ server {
 
 #### 3.2 Enable Site
 ```bash
-sudo ln -s /etc/nginx/sites-available/laporan-asn /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/toolrhk.web.id /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -358,7 +358,7 @@ sudo systemctl restart nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # Dapatkan SSL certificate
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d toolrhk.my.id -d www.toolrhk.my.id
 
 # Auto-renewal sudah disetup otomatis, test dengan:
 sudo certbot renew --dry-run

@@ -40,10 +40,20 @@
                 Kembali
             </a>
             <div class="flex items-center gap-2">
+                @if (!$laporan->file_pdf && !$laporan->file_docx)
                 <a href="{{ route('laporan.edit', $laporan) }}"
                    class="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900 transition">
                     Edit
                 </a>
+                @endif
+                <form action="{{ route('laporan.template.save', $laporan) }}" method="POST">
+                    @csrf
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900 transition"
+                        title="Simpan isi laporan ini sebagai template untuk digunakan kembali">
+                        📋 Simpan Template
+                    </button>
+                </form>
                 <a href="{{ route('laporan.download.pdf', $laporan) }}"
                    class="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-xl hover:bg-red-100 dark:hover:bg-red-900 transition">
                     ↓ PDF
@@ -183,6 +193,41 @@
                                  class="w-full h-36 object-cover rounded-xl border border-gray-200 dark:border-gray-700 group-hover:opacity-90 transition">
                         </a>
                     @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- GPS Photo --}}
+        @if ($laporan->gpsPhoto)
+            <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Foto GPS</h3>
+                <div class="space-y-3">
+                    <a href="{{ Storage::url('gps-photos/' . $laporan->gpsPhoto->filename) }}" target="_blank" class="block group">
+                        <img src="{{ Storage::url('gps-photos/' . $laporan->gpsPhoto->filename) }}" alt="Foto GPS"
+                             class="w-full h-64 object-cover rounded-xl border border-gray-200 dark:border-gray-700 group-hover:opacity-90 transition">
+                    </a>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Lokasi</p>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ $laporan->gpsPhoto->address }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Tanggal & Waktu</p>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ $laporan->gpsPhoto->photo_datetime->translatedFormat('d M Y H:i') }}</p>
+                        </div>
+                        @if ($laporan->gpsPhoto->latitude && $laporan->gpsPhoto->longitude)
+                            <div>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Koordinat</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ number_format($laporan->gpsPhoto->latitude, 6) }}, {{ number_format($laporan->gpsPhoto->longitude, 6) }}</p>
+                            </div>
+                        @endif
+                        @if ($laporan->gpsPhoto->altitude)
+                            <div>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Ketinggian</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ number_format($laporan->gpsPhoto->altitude, 2) }} m</p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         @endif

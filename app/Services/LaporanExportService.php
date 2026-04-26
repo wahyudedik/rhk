@@ -19,7 +19,7 @@ class LaporanExportService
      */
     public function generatePdf(Laporan $laporan): string
     {
-        $laporan->load(['rhk', 'jenisRhk', 'user']);
+        $laporan->load(['rhk', 'jenisRhk', 'user', 'gpsPhoto']);
 
         // Konversi semua gambar ke base64 untuk dompdf
         $logoBase64 = null;
@@ -68,7 +68,7 @@ class LaporanExportService
      */
     public function generateDocx(Laporan $laporan): string
     {
-        $laporan->load(['rhk', 'jenisRhk', 'user']);
+        $laporan->load(['rhk', 'jenisRhk', 'user', 'gpsPhoto']);
 
         $phpWord = new PhpWord;
         $phpWord->setDefaultFontName('Times New Roman');
@@ -191,22 +191,56 @@ class LaporanExportService
         }
 
         // Dokumentasi foto
-        if ($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0) {
+        if (($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0) || $laporan->gpsPhoto) {
             $section->addPageBreak();
             $section->addText('DOKUMENTASI', ['bold' => true, 'size' => 12], $centerPara);
             $section->addTextBreak(1);
 
-            foreach ($laporan->foto_dokumentasi as $foto) {
-                $fotoAbsPath = $this->resolveStoragePath($foto);
-                if ($fotoAbsPath && file_exists($fotoAbsPath)) {
-                    $fotoPathNormalized = str_replace('\\', '/', $fotoAbsPath);
-                    $section->addImage($fotoPathNormalized, ['width' => 450, 'height' => 320, 'alignment' => Jc::CENTER]);
-                    $section->addTextBreak(1);
+            // GPS Photo jika ada
+            if ($laporan->gpsPhoto) {
+                $gpsPhotoAbsPath = $this->resolveStoragePath('gps-photos/'.$laporan->gpsPhoto->filename);
+                if ($gpsPhotoAbsPath && file_exists($gpsPhotoAbsPath)) {
+                    $gpsPhotoPathNormalized = str_replace('\\', '/', $gpsPhotoAbsPath);
+                    $section->addText('Foto GPS', ['bold' => true, 'size' => 11], $centerPara);
+                    $section->addImage($gpsPhotoPathNormalized, ['width' => 400, 'height' => 300, 'alignment' => Jc::CENTER]);
+                    $section->addText('📍 '.$laporan->gpsPhoto->address, ['italic' => true, 'size' => 9], $centerPara);
+                    $section->addText('📅 '.$laporan->gpsPhoto->photo_datetime->translatedFormat('d F Y H:i'), ['italic' => true, 'size' => 9], $centerPara);
+                    $section->addTextBreak(2);
                 }
             }
 
+            // Foto dokumentasi lainnya - 2 per row
+            if ($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0) {
+                $section->addText('Foto Dokumentasi', ['bold' => true, 'size' => 11], $centerPara);
+                $section->addTextBreak(1);
+                
+                $fotos = $laporan->foto_dokumentasi;
+                $chunks = array_chunk($fotos, 2);
+                
+                foreach ($chunks as $row) {
+                    $table = $section->addTable(['borderSize' => 0, 'borderColor' => 'ffffff', 'cellMargin' => 100, 'width' => 100 * 50, 'unit' => 'pct']);
+                    $table->addRow();
+                    
+                    foreach ($row as $foto) {
+                        $fotoAbsPath = $this->resolveStoragePath($foto);
+                        if ($fotoAbsPath && file_exists($fotoAbsPath)) {
+                            $fotoPathNormalized = str_replace('\\', '/', $fotoAbsPath);
+                            $cell = $table->addCell(5000, ['borderSize' => 0, 'borderColor' => 'ffffff']);
+                            $cell->addImage($fotoPathNormalized, ['width' => 350, 'height' => 280, 'alignment' => Jc::CENTER]);
+                        }
+                    }
+                    
+                    // Add empty cell if odd number of photos
+                    if (count($row) === 1) {
+                        $table->addCell(5000, ['borderSize' => 0, 'borderColor' => 'ffffff']);
+                    }
+                }
+                
+                $section->addTextBreak(1);
+            }
+
             if ($laporan->keterangan_dokumentasi) {
-                $section->addText($laporan->keterangan_dokumentasi, ['italic' => true, 'size' => 11], $centerPara);
+                $section->addText($laporan->keterangan_dokumentasi, ['italic' => true, 'size' => 10], $centerPara);
             }
         }
 

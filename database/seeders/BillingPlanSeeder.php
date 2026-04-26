@@ -16,9 +16,11 @@ class BillingPlanSeeder extends Seeder
                 'harga' => 0,
                 'durasi_hari' => 30,
                 'batas_laporan_per_bulan' => 5,
+                'batas_gps_photo_per_bulan' => 10,
                 'fitur' => [
                     'Akses selama 30 hari',
                     'Maksimal 5 laporan per bulan',
+                    'Maksimal 10 foto GPS per bulan',
                     'Semua jenis RHK tersedia',
                     'Upload dokumen pendukung',
                 ],
@@ -32,9 +34,11 @@ class BillingPlanSeeder extends Seeder
                 'harga' => 29000,
                 'durasi_hari' => 30,
                 'batas_laporan_per_bulan' => 20,
+                'batas_gps_photo_per_bulan' => 20,
                 'fitur' => [
                     'Akses penuh selama 30 hari',
                     'Maksimal 20 laporan per bulan',
+                    'Maksimal 20 foto GPS per bulan',
                     'Semua 9 RHK & 17 jenis kegiatan',
                     'Upload dokumen pendukung',
                     'Riwayat laporan lengkap',
@@ -49,9 +53,11 @@ class BillingPlanSeeder extends Seeder
                 'harga' => 59000,
                 'durasi_hari' => 30,
                 'batas_laporan_per_bulan' => 50,
+                'batas_gps_photo_per_bulan' => 50,
                 'fitur' => [
                     'Akses penuh selama 30 hari',
                     'Maksimal 50 laporan per bulan',
+                    'Maksimal 50 foto GPS per bulan',
                     'Semua 9 RHK & 17 jenis kegiatan',
                     'Upload dokumen pendukung',
                     'Riwayat laporan lengkap',
@@ -67,9 +73,11 @@ class BillingPlanSeeder extends Seeder
                 'harga' => 99000,
                 'durasi_hari' => 30,
                 'batas_laporan_per_bulan' => null, // unlimited
+                'batas_gps_photo_per_bulan' => null, // unlimited
                 'fitur' => [
                     'Akses penuh selama 30 hari',
                     'Laporan tidak terbatas',
+                    'Foto GPS tidak terbatas',
                     'Semua 9 RHK & 17 jenis kegiatan',
                     'Upload dokumen pendukung',
                     'Riwayat laporan lengkap',

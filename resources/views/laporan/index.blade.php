@@ -130,7 +130,6 @@
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10">No</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Periode</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jenis RHK / Kegiatan</th>
-                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Dokumen</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-48">Aksi</th>
                     </tr>
                 </thead>
@@ -155,20 +154,6 @@
                                 </p>
                             </td>
                             <td class="px-5 py-4">
-                                @if ($laporan->file_dokumen)
-                                    <a href="{{ Storage::url($laporan->file_dokumen) }}" target="_blank"
-                                       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 rounded-lg hover:bg-green-100 dark:hover:bg-green-900 transition border border-green-200 dark:border-green-800"
-                                       title="Unduh dokumen">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
-                                        Unduh
-                                    </a>
-                                @else
-                                    <span class="text-xs text-gray-400 dark:text-gray-600">—</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4">
                                 <div class="flex items-center gap-1.5">
                                     <a href="{{ route('laporan.show', $laporan) }}"
                                        class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition"
@@ -177,6 +162,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </a>
+                                    @if (!$laporan->file_pdf && !$laporan->file_docx)
                                     <a href="{{ route('laporan.edit', $laporan) }}"
                                        class="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-lg transition"
                                        title="Edit laporan">
@@ -184,6 +170,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </a>
+                                    @endif
                                     @if ($laporan->file_dokumen)
                                         <a href="{{ Storage::url($laporan->file_dokumen) }}" target="_blank"
                                            class="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950 rounded-lg transition"
@@ -276,6 +263,7 @@
                             </svg>
                             Lihat
                         </a>
+                        @if (!$laporan->file_pdf && !$laporan->file_docx)
                         <a href="{{ route('laporan.edit', $laporan) }}"
                            class="flex flex-col items-center gap-1 py-2.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 rounded-xl hover:bg-amber-100 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,6 +271,7 @@
                             </svg>
                             Edit
                         </a>
+                        @endif
                         <a href="{{ route('laporan.download.pdf', $laporan) }}"
                            class="flex flex-col items-center gap-1 py-2.5 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-xl hover:bg-red-100 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

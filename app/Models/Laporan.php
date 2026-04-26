@@ -9,6 +9,7 @@ class Laporan extends Model
 {
     protected $fillable = [
         'user_id',
+        'gps_photo_id',
         'rhk_id',
         'jenis_rhk_id',
         'bulan',
@@ -41,6 +42,9 @@ class Laporan extends Model
         // File generated
         'file_pdf',
         'file_docx',
+        // Template
+        'is_template',
+        'template_name',
     ];
 
     protected function casts(): array
@@ -49,6 +53,7 @@ class Laporan extends Model
             'tahun' => 'integer',
             'ttd_tanggal' => 'date',
             'foto_dokumentasi' => 'array',
+            'is_template' => 'boolean',
         ];
     }
 
@@ -65,5 +70,20 @@ class Laporan extends Model
     public function jenisRhk(): BelongsTo
     {
         return $this->belongsTo(JenisRhk::class);
+    }
+
+    public function gpsPhoto(): BelongsTo
+    {
+        return $this->belongsTo(GpsPhoto::class);
+    }
+
+    public function scopeTemplates($query)
+    {
+        return $query->where('is_template', true);
+    }
+
+    public function scopeLaporans($query)
+    {
+        return $query->where('is_template', false);
     }
 }

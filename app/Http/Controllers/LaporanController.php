@@ -20,7 +20,8 @@ class LaporanController extends Controller
     public function index(Request $request): View
     {
         $query = Laporan::with(['rhk', 'jenisRhk'])
-            ->where('user_id', $request->user()->id);
+            ->where('user_id', $request->user()->id)
+            ->laporans();
 
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
@@ -43,7 +44,7 @@ class LaporanController extends Controller
             ->distinct()->orderByDesc('tahun')->pluck('tahun');
 
         $rhkList = Rhk::orderBy('urutan')->get(['id', 'nama', 'urutan']);
-        $totalLaporan = Laporan::where('user_id', $request->user()->id)->count();
+        $totalLaporan = Laporan::where('user_id', $request->user()->id)->laporans()->count();
 
         return view('laporan.index', compact('laporans', 'tahunList', 'rhkList', 'totalLaporan'));
     }
@@ -55,7 +56,18 @@ class LaporanController extends Controller
         $rhks = Rhk::with('jenisRhks')->orderBy('urutan')->get();
         $user = auth()->user();
 
-        return view('laporan.create', compact('rhks', 'user'));
+        $templates = Laporan::with(['rhk', 'jenisRhk'])
+            ->where('user_id', $user->id)
+            ->templates()
+            ->orderByDesc('updated_at')
+            ->get();
+
+        // Get GPS photos for this user
+        $gpsPhotos = $user->gpsPhotos()
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('laporan.create', compact('rhks', 'user', 'templates', 'gpsPhotos'));
     }
 
     public function store(StoreLaporanRequest $request): RedirectResponse
@@ -87,7 +99,7 @@ class LaporanController extends Controller
         }
         unset($validated['ttd_gambar_canvas']);
 
-        // Foto dokumentasi (max 10)
+        // Foto dokumentasi (max 10) — ambil langsung dari request, bukan dari validated
         $fotos = [];
         if ($request->hasFile('foto_dokumentasi')) {
             foreach ($request->file('foto_dokumentasi') as $foto) {
@@ -99,21 +111,20 @@ class LaporanController extends Controller
         }
         $validated['foto_dokumentasi'] = ! empty($fotos) ? $fotos : null;
 
-        Laporan::create($validated);
+        $laporan = Laporan::create($validated);
         $sub->tambahPenggunaan();
+
+        // Otomatis simpan/perbarui template untuk RHK + Jenis RHK ini
+        $this->upsertTemplate($laporan);
 
         // Generate PDF & DOCX di background (simpan path)
         try {
-            $laporan = Laporan::where('user_id', $request->user()->id)->latest()->first();
             $pdfPath = $this->exportService->generatePdf($laporan);
             $docxPath = $this->exportService->generateDocx($laporan);
             $laporan->update(['file_pdf' => $pdfPath, 'file_docx' => $docxPath]);
         } catch (\Throwable $e) {
             report($e);
         }
-
-        // Redirect ke detail laporan — user bisa download dari sana
-        $laporan = $laporan ?? Laporan::where('user_id', $request->user()->id)->latest()->first();
 
         return redirect()->route('laporan.show', $laporan)
             ->with('success', 'Laporan berhasil disimpan. Silakan download PDF atau Word dari halaman ini.');
@@ -220,6 +231,131 @@ class LaporanController extends Controller
     public function getJenisRhk(Rhk $rhk): JsonResponse
     {
         return response()->json($rhk->jenisRhks()->orderBy('urutan')->get(['id', 'nama']));
+    }
+
+    public function getGpsPhotos(): JsonResponse
+    {
+        $user = auth()->user();
+        $photos = $user->gpsPhotos()
+            ->orderByDesc('created_at')
+            ->get(['id', 'filename', 'original_filename', 'latitude', 'longitude', 'address', 'created_at']);
+
+        return response()->json($photos);
+    }
+
+    public function templates(): View
+    {
+        $templates = Laporan::with(['rhk', 'jenisRhk'])
+            ->where('user_id', auth()->id())
+            ->templates()
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('laporan.templates', compact('templates'));
+    }
+
+    public function loadTemplate(Laporan $laporan): JsonResponse
+    {
+        $this->authorize('view', $laporan);
+
+        if (! $laporan->is_template) {
+            abort(404);
+        }
+
+        return response()->json([
+            'rhk_id' => $laporan->rhk_id,
+            'jenis_rhk_id' => $laporan->jenis_rhk_id,
+            'header_instansi_1' => $laporan->header_instansi_1,
+            'header_instansi_2' => $laporan->header_instansi_2,
+            'header_instansi_3' => $laporan->header_instansi_3,
+            'header_instansi_4' => $laporan->header_instansi_4,
+            'latar_belakang' => $laporan->latar_belakang,
+            'maksud_tujuan' => $laporan->maksud_tujuan,
+            'ruang_lingkup' => $laporan->ruang_lingkup,
+            'dasar' => $laporan->dasar,
+            'kegiatan_dilaksanakan' => $laporan->kegiatan_dilaksanakan,
+            'hasil_dicapai' => $laporan->hasil_dicapai,
+            'simpulan' => $laporan->simpulan,
+            'saran' => $laporan->saran,
+            'penutup' => $laporan->penutup,
+            'ttd_kota' => $laporan->ttd_kota,
+            'ttd_jabatan' => $laporan->ttd_jabatan,
+            'ttd_nama' => $laporan->ttd_nama,
+            'ttd_nip' => $laporan->ttd_nip,
+            'template_name' => $laporan->template_name,
+        ]);
+    }
+
+    public function saveAsTemplate(Laporan $laporan): RedirectResponse
+    {
+        $this->authorize('update', $laporan);
+
+        $this->upsertTemplate($laporan);
+
+        return back()->with('success', 'Laporan berhasil disimpan sebagai template.');
+    }
+
+    public function destroyTemplate(Laporan $laporan): RedirectResponse
+    {
+        $this->authorize('delete', $laporan);
+
+        if (! $laporan->is_template) {
+            abort(404);
+        }
+
+        $laporan->delete();
+
+        return redirect()->route('laporan.templates')
+            ->with('success', 'Template berhasil dihapus.');
+    }
+
+    /**
+     * Simpan atau perbarui template berdasarkan user + rhk + jenis_rhk.
+     * Satu kombinasi user+rhk+jenis_rhk hanya punya satu template (upsert).
+     */
+    private function upsertTemplate(Laporan $laporan): void
+    {
+        $templateName = $laporan->jenisRhk?->nama ?? 'Template';
+
+        $existing = Laporan::where('user_id', $laporan->user_id)
+            ->where('rhk_id', $laporan->rhk_id)
+            ->where('jenis_rhk_id', $laporan->jenis_rhk_id)
+            ->where('is_template', true)
+            ->first();
+
+        $templateData = [
+            'user_id' => $laporan->user_id,
+            'rhk_id' => $laporan->rhk_id,
+            'jenis_rhk_id' => $laporan->jenis_rhk_id,
+            'bulan' => $laporan->bulan,
+            'tahun' => $laporan->tahun,
+            'header_instansi_1' => $laporan->header_instansi_1,
+            'header_instansi_2' => $laporan->header_instansi_2,
+            'header_instansi_3' => $laporan->header_instansi_3,
+            'header_instansi_4' => $laporan->header_instansi_4,
+            'latar_belakang' => $laporan->latar_belakang,
+            'maksud_tujuan' => $laporan->maksud_tujuan,
+            'ruang_lingkup' => $laporan->ruang_lingkup,
+            'dasar' => $laporan->dasar,
+            'kegiatan_dilaksanakan' => $laporan->kegiatan_dilaksanakan,
+            'hasil_dicapai' => $laporan->hasil_dicapai,
+            'simpulan' => $laporan->simpulan,
+            'saran' => $laporan->saran,
+            'penutup' => $laporan->penutup,
+            'ttd_kota' => $laporan->ttd_kota,
+            'ttd_jabatan' => $laporan->ttd_jabatan,
+            'ttd_nama' => $laporan->ttd_nama,
+            'ttd_nip' => $laporan->ttd_nip,
+            'ttd_gambar' => $laporan->ttd_gambar,
+            'is_template' => true,
+            'template_name' => $templateName,
+        ];
+
+        if ($existing) {
+            $existing->update($templateData);
+        } else {
+            Laporan::create($templateData);
+        }
     }
 
     private function saveBase64Image(string $base64, string $folder): string

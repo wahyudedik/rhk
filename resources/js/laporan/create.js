@@ -395,11 +395,31 @@ window.openPreview = function () {
         if (img.src && img.src.startsWith('data:')) allPreviews.push(img.src);
     });
     var keterangan = getVal('keterangan_dokumentasi');
-    if (allPreviews.length > 0) {
+    var gpsPhotoId = getVal('gps_photo_id');
+    var gpsPhotoImg = document.getElementById('gps-photo-preview-img');
+
+    if (gpsPhotoId || allPreviews.length > 0) {
         html += '<div style="margin-top:24px;text-align:center;"><strong>DOKUMENTASI</strong></div>';
+
+        // GPS Photo
+        if (gpsPhotoId && gpsPhotoImg && gpsPhotoImg.src) {
+            // html += '<div style="text-align:center;margin:8px 0;"><strong style="font-size:11pt;">Foto GPS</strong></div>';
+            html += '<div style="text-align:center;margin:8px 0;"><img src="' + gpsPhotoImg.src + '" style="max-width:100%;max-height:300px;object-fit:contain;"></div>';
+            var gpsLocation = document.getElementById('gps-photo-preview-location');
+            var gpsDate = document.getElementById('gps-photo-preview-date');
+            if (gpsLocation && gpsLocation.textContent) {
+                html += '<div style="text-align:center;font-style:italic;font-size:10pt;margin:4px 0;">' + gpsLocation.textContent + '</div>';
+            }
+            if (gpsDate && gpsDate.textContent) {
+                html += '<div style="text-align:center;font-style:italic;font-size:10pt;margin:4px 0;">' + gpsDate.textContent + '</div>';
+            }
+        }
+
+        // Batch photos
         allPreviews.forEach(function (src) {
             html += '<div style="text-align:center;margin:8px 0;"><img src="' + src + '" style="max-width:100%;max-height:300px;object-fit:contain;"></div>';
         });
+
         if (keterangan) html += '<div style="text-align:center;font-style:italic;margin-top:4px;">' + keterangan + '</div>';
     }
     html += '</div>';
@@ -434,4 +454,150 @@ window.printPreview = function () {
     win.document.close();
     win.focus();
     setTimeout(function () { win.print(); }, 600);
+};
+
+// ── Template Loader ───────────────────────────────────────────────────────────
+window.loadTemplate = function (templateId) {
+    var url = '/templates/' + templateId + '/load';
+    fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    })
+        .then(function (res) {
+            if (!res.ok) throw new Error('Gagal memuat template');
+            return res.json();
+        })
+        .then(function (data) {
+            // Set RHK
+            var rhkSelect = document.getElementById('rhk-select');
+            if (rhkSelect && data.rhk_id) {
+                rhkSelect.value = data.rhk_id;
+                rhkSelect.dispatchEvent(new Event('change'));
+                // Tunggu jenis RHK ter-render lalu set
+                setTimeout(function () {
+                    var jenisSelect = document.getElementById('jenis-rhk-select');
+                    if (jenisSelect && data.jenis_rhk_id) {
+                        jenisSelect.value = data.jenis_rhk_id;
+                    }
+                }, 200);
+            }
+
+            // Set header instansi
+            ['header_instansi_1', 'header_instansi_2', 'header_instansi_3', 'header_instansi_4'].forEach(function (name) {
+                var el = document.querySelector('[name="' + name + '"]');
+                if (el && data[name] !== undefined) el.value = data[name] || '';
+            });
+
+            // Set TTD fields (kecuali tanggal — biarkan user isi sendiri)
+            ['ttd_kota', 'ttd_jabatan', 'ttd_nama', 'ttd_nip'].forEach(function (name) {
+                var el = document.querySelector('[name="' + name + '"]');
+                if (el && data[name] !== undefined) el.value = data[name] || '';
+            });
+
+            // Set Quill editors
+            var fields = ['latar_belakang', 'maksud_tujuan', 'ruang_lingkup', 'dasar', 'kegiatan_dilaksanakan', 'hasil_dicapai', 'simpulan', 'saran', 'penutup'];
+            fields.forEach(function (field) {
+                var quill = quillInstances[field];
+                var hidden = document.getElementById('hidden-' + field);
+                var content = data[field] || '';
+                if (quill) {
+                    if (content && content.startsWith('<')) {
+                        quill.root.innerHTML = content;
+                    } else if (content) {
+                        quill.setText(content);
+                    } else {
+                        quill.root.innerHTML = '';
+                    }
+                }
+                if (hidden) hidden.value = content;
+            });
+
+            // Highlight tombol yang dipilih
+            document.querySelectorAll('.template-btn').forEach(function (btn) {
+                btn.classList.remove('ring-2', 'ring-purple-500');
+            });
+            var activeBtn = document.querySelector('[data-template-id="' + templateId + '"]');
+            if (activeBtn) activeBtn.classList.add('ring-2', 'ring-purple-500');
+
+            // Tampilkan banner sukses
+            var banner = document.getElementById('template-loaded-banner');
+            var bannerText = document.getElementById('template-loaded-text');
+            if (banner) {
+                if (bannerText && data.template_name) {
+                    bannerText.textContent = 'Template "' + data.template_name + '" berhasil dimuat. Silakan sesuaikan bulan, tahun, dan tanggal TTD.';
+                }
+                banner.classList.remove('hidden');
+                // Scroll ke atas form
+                banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        })
+        .catch(function (err) {
+            alert('Gagal memuat template: ' + err.message);
+        });
+};
+
+// Auto-load template jika ada query param template_id
+document.addEventListener('DOMContentLoaded', function () {
+    var params = new URLSearchParams(window.location.search);
+    var templateId = params.get('template_id');
+    if (templateId) {
+        // Tunggu Quill selesai init
+        setTimeout(function () {
+            window.loadTemplate(parseInt(templateId, 10));
+        }, 500);
+    }
+});
+
+// ── GPS Photo Modal ───────────────────────────────────────────────────────────
+window.openGpsPhotoModal = function () {
+    document.getElementById('gps-photo-modal').classList.remove('hidden');
+};
+
+window.closeGpsPhotoModal = function () {
+    document.getElementById('gps-photo-modal').classList.add('hidden');
+};
+
+window.filterGpsPhotos = function (filter) {
+    var items = document.querySelectorAll('.gps-photo-item');
+    var tabs = document.querySelectorAll('.filter-tab');
+
+    // Update tab active state
+    tabs.forEach(function (tab) {
+        if (tab.getAttribute('data-filter') === filter) {
+            tab.classList.add('active', 'bg-blue-600', 'text-white');
+            tab.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-700');
+        } else {
+            tab.classList.remove('active', 'bg-blue-600', 'text-white');
+            tab.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-700');
+        }
+    });
+
+    // Filter items
+    items.forEach(function (item) {
+        if (filter === 'all' || item.getAttribute('data-date') === filter) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+};
+
+window.selectGpsPhoto = function (photoId, photoUrl, filename, datetime, address) {
+    // Set hidden input
+    document.getElementById('gps-photo-id-input').value = photoId;
+
+    // Show preview
+    var selectedDiv = document.getElementById('gps-photo-selected');
+    document.getElementById('gps-photo-preview-img').src = photoUrl;
+    document.getElementById('gps-photo-preview-name').textContent = filename;
+    document.getElementById('gps-photo-preview-date').textContent = datetime;
+    document.getElementById('gps-photo-preview-location').textContent = '📍 ' + address;
+    selectedDiv.classList.remove('hidden');
+
+    // Close modal
+    window.closeGpsPhotoModal();
+};
+
+window.clearGpsPhotoSelection = function () {
+    document.getElementById('gps-photo-id-input').value = '';
+    document.getElementById('gps-photo-selected').classList.add('hidden');
 };

@@ -42,6 +42,7 @@ class StoreLaporanRequest extends FormRequest
             'ttd_gambar' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
             'ttd_gambar_canvas' => ['nullable', 'string'], // base64 dari canvas
             // Dokumentasi
+            'gps_photo_id' => ['nullable', 'exists:gps_photos,id'],
             'foto_dokumentasi.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
             'keterangan_dokumentasi' => ['nullable', 'string', 'max:500'],
         ];

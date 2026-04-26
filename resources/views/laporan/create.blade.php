@@ -19,6 +19,41 @@
               data-user-ttd="{{ $user->tanda_tangan ? Storage::url($user->tanda_tangan) : '' }}">
             @csrf
 
+            {{-- Banner Template --}}
+            @if ($templates->isNotEmpty())
+                <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>
+                            </svg>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">Gunakan Template</span>
+                        </div>
+                        <a href="{{ route('laporan.templates') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Kelola template</a>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih template untuk mengisi otomatis isi laporan. Ganti bulan, tahun, tanggal, dan dokumentasi sesuai kebutuhan.</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($templates as $tmpl)
+                            <button type="button"
+                                onclick="window.loadTemplate({{ $tmpl->id }})"
+                                data-template-id="{{ $tmpl->id }}"
+                                class="template-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900 transition border border-purple-200 dark:border-purple-800">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                {{ Str::limit($tmpl->template_name, 40) }}
+                            </button>
+                        @endforeach
+                    </div>
+                    <div id="template-loaded-banner" class="hidden mt-3 flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-xl text-xs text-green-700 dark:text-green-400">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span id="template-loaded-text">Template berhasil dimuat. Silakan sesuaikan bulan, tahun, dan tanggal TTD.</span>
+                    </div>
+                </div>
+            @endif
+
             {{-- Banner info kuota --}}
             @php $sub = $user->activeSubscription(); @endphp
             @if ($sub)
@@ -235,6 +270,44 @@
                     <span class="text-xs text-gray-400" id="foto-counter">0/10 foto</span>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Maks 10 foto total. Setiap batch maks 5 foto (JPG/PNG, maks 5MB/foto).</p>
+
+                {{-- GPS Photo Picker (dalam dokumentasi) --}}
+                <div class="mb-5 pb-5 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">Pilih Foto GPS (Opsional)</label>
+                        <div class="flex items-center gap-2">
+                            @if ($gpsPhotos->isNotEmpty())
+                                <button type="button" onclick="window.openGpsPhotoModal()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                                    📷 Pilih dari galeri
+                                </button>
+                            @endif
+                            <a href="{{ route('gps-photo.index') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Buat foto baru</a>
+                        </div>
+                    </div>
+                    
+                    {{-- Selected GPS Photo Preview --}}
+                    @php
+                        $selectedGpsPhoto = null;
+                        if (old('gps_photo_id')) {
+                            $selectedGpsPhoto = $gpsPhotos->firstWhere('id', old('gps_photo_id'));
+                        }
+                    @endphp
+                    <div id="gps-photo-selected" class="@if (!$selectedGpsPhoto) hidden @endif">
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-800">
+                            <img id="gps-photo-preview-img" src="@if ($selectedGpsPhoto){{ Storage::url('gps-photos/' . $selectedGpsPhoto->filename) }}@endif" alt="GPS Photo" class="h-16 w-16 object-cover rounded-lg">
+                            <div class="flex-1 min-w-0">
+                                <p id="gps-photo-preview-name" class="text-sm font-medium text-gray-900 dark:text-white truncate">@if ($selectedGpsPhoto){{ $selectedGpsPhoto->original_filename }}@endif</p>
+                                <p id="gps-photo-preview-date" class="text-xs text-gray-600 dark:text-gray-400">@if ($selectedGpsPhoto){{ $selectedGpsPhoto->created_at->format('d M Y H:i') }}@endif</p>
+                                <p id="gps-photo-preview-location" class="text-xs text-gray-600 dark:text-gray-400 truncate">@if ($selectedGpsPhoto)📍 {{ $selectedGpsPhoto->address }}@endif</p>
+                            </div>
+                            <button type="button" onclick="window.clearGpsPhotoSelection()" class="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition">
+                                ✕ Hapus
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="gps_photo_id" id="gps-photo-id-input" value="{{ old('gps_photo_id') }}">
+                </div>
+
                 <div id="foto-inputs-container" class="space-y-3"></div>
                 <button type="button" id="btn-add-foto" onclick="window.addFotoBatch()"
                     class="mt-3 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900 transition border border-blue-200 dark:border-blue-800">
@@ -267,6 +340,88 @@
                     <button type="button" onclick="window.closePreview()" class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">✕ Tutup</button>
                 </div>
                 <div id="preview-content" class="p-8 text-sm text-gray-900 font-serif leading-relaxed"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- GPS Photo Modal --}}
+    <div id="gps-photo-modal" class="fixed inset-0 z-50 hidden bg-gray-900/80 overflow-y-auto">
+        <div class="min-h-screen flex items-start justify-center py-8 px-4">
+            <div class="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-2xl">
+                {{-- Modal Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <h2 class="font-semibold text-gray-900 dark:text-white">Pilih Foto GPS</h2>
+                    <button type="button" onclick="window.closeGpsPhotoModal()" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">✕ Tutup</button>
+                </div>
+
+                {{-- Modal Body --}}
+                <div class="p-6">
+                    {{-- Filter/Folder Tabs --}}
+                    <div class="mb-6">
+                        <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                            <button type="button" onclick="window.filterGpsPhotos('all')" class="filter-tab px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition active bg-blue-600 text-white" data-filter="all">
+                                📁 Semua ({{ $gpsPhotos->count() }})
+                            </button>
+                            @php
+                                $groupedPhotos = $gpsPhotos->groupBy(function($photo) {
+                                    return $photo->created_at->format('Y-m-d');
+                                })->sortByDesc(function($group, $date) {
+                                    return $date;
+                                });
+                            @endphp
+                            @foreach ($groupedPhotos as $date => $photos)
+                                @php
+                                    $dateObj = \Carbon\Carbon::parse($date);
+                                    $today = \Carbon\Carbon::today();
+                                    $yesterday = $today->copy()->subDay();
+                                    
+                                    if ($dateObj->isSameDay($today)) {
+                                        $label = 'Hari Ini';
+                                    } elseif ($dateObj->isSameDay($yesterday)) {
+                                        $label = 'Kemarin';
+                                    } else {
+                                        $label = $dateObj->translatedFormat('d M Y');
+                                    }
+                                @endphp
+                                <button type="button" onclick="window.filterGpsPhotos('{{ $date }}')" class="filter-tab px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" data-filter="{{ $date }}">
+                                    📅 {{ $label }} ({{ $photos->count() }})
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Photos Grid --}}
+                    <div id="gps-photos-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        @foreach ($gpsPhotos as $photo)
+                            <div class="gps-photo-item" data-date="{{ $photo->created_at->format('Y-m-d') }}" data-id="{{ $photo->id }}">
+                                <button type="button" onclick="window.selectGpsPhoto({{ $photo->id }}, '{{ Storage::url('gps-photos/' . $photo->filename) }}', '{{ $photo->original_filename }}', '{{ $photo->created_at->format('d M Y H:i') }}', '{{ $photo->address }}')" class="w-full group">
+                                    <div class="relative h-32 rounded-xl border-2 border-gray-300 dark:border-gray-700 overflow-hidden hover:border-blue-500 transition">
+                                        <img src="{{ Storage::url('gps-photos/' . $photo->filename) }}" 
+                                             alt="{{ $photo->original_filename }}"
+                                             class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
+                                            <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-2 truncate font-medium">{{ $photo->original_filename }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500">{{ $photo->created_at->format('d M Y H:i') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 truncate">📍 {{ $photo->address }}</p>
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if ($gpsPhotos->isEmpty())
+                        <div class="text-center py-12">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Belum ada foto GPS. <a href="{{ route('gps-photo.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline">Buat foto baru</a></p>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

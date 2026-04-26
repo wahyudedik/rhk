@@ -167,28 +167,59 @@
     @endif
 
     {{-- Dokumentasi Foto --}}
-    @if ($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0)
+    @if (($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0) || $laporan->gpsPhoto)
         <div class="page-break"></div>
         <div class="dokumentasi-title">DOKUMENTASI</div>
-        @php $fotos = $laporan->foto_dokumentasi; $chunks = array_chunk($fotos, 2); @endphp
-        <table class="foto-grid" cellpadding="0" cellspacing="0">
-            @foreach ($chunks as $row)
-                <tr>
-                    @foreach ($row as $foto)
-                        <td>
-                            @if (isset($fotoBase64[$foto]))
-                                <img src="{{ $fotoBase64[$foto] }}">
+        
+        {{-- GPS Photo --}}
+        @if ($laporan->gpsPhoto)
+            @php
+                $gpsPhotoPath = storage_path('app/public/gps-photos/' . $laporan->gpsPhoto->filename);
+                $gpsPhotoBase64 = null;
+                if (file_exists($gpsPhotoPath)) {
+                    $gpsPhotoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($gpsPhotoPath));
+                }
+            @endphp
+            @if ($gpsPhotoBase64)
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <!-- <div style="font-weight: bold; margin-bottom: 8px; font-size: 11pt;">Foto GPS</div> -->
+                    <img src="{{ $gpsPhotoBase64 }}" style="max-width: 400px; max-height: 300px; border: 1px solid #ccc; padding: 4px;">
+                    <div style="font-style: italic; font-size: 9pt; margin-top: 6px;">
+                        📍 {{ $laporan->gpsPhoto->address }}
+                    </div>
+                    <div style="font-style: italic; font-size: 9pt;">
+                        📅 {{ $laporan->gpsPhoto->photo_datetime->translatedFormat('d F Y H:i') }}
+                    </div>
+                </div>
+            @endif
+        @endif
+
+        {{-- Foto Dokumentasi Lainnya --}}
+        @if ($laporan->foto_dokumentasi && count($laporan->foto_dokumentasi) > 0)
+            <div style="margin-top: 16px;">
+                <!-- <div style="font-weight: bold; margin-bottom: 12px; font-size: 11pt;">Foto Dokumentasi</div> -->
+                <table style="width: 100%; border-collapse: collapse;" cellpadding="8" cellspacing="0">
+                    @php $fotos = $laporan->foto_dokumentasi; $chunks = array_chunk($fotos, 2); @endphp
+                    @foreach ($chunks as $row)
+                        <tr>
+                            @foreach ($row as $foto)
+                                <td style="width: 50%; text-align: center; padding: 8px;">
+                                    @if (isset($fotoBase64[$foto]))
+                                        <img src="{{ $fotoBase64[$foto] }}" style="max-width: 100%; max-height: 280px; border: 1px solid #ddd; padding: 4px;">
+                                    @endif
+                                </td>
+                            @endforeach
+                            @if (count($row) === 1)
+                                <td style="width: 50%;"></td>
                             @endif
-                        </td>
+                        </tr>
                     @endforeach
-                    @if (count($row) === 1)
-                        <td></td>
-                    @endif
-                </tr>
-            @endforeach
-        </table>
+                </table>
+            </div>
+        @endif
+
         @if ($laporan->keterangan_dokumentasi)
-            <div class="foto-keterangan">{{ $laporan->keterangan_dokumentasi }}</div>
+            <div class="foto-keterangan" style="margin-top: 12px;">{{ $laporan->keterangan_dokumentasi }}</div>
         @endif
     @endif
 

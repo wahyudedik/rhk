@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\RhkController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
+use App\Http\Controllers\GpsPhotoController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanDownloadController;
 use App\Http\Controllers\PelangganDashboardController;
@@ -55,8 +56,21 @@ Route::middleware(['auth', 'role:pelanggan', 'subscription'])->group(function ()
 
     Route::resource('laporan', LaporanController::class);
     Route::get('/rhk/{rhk}/jenis-rhk', [LaporanController::class, 'getJenisRhk'])->name('rhk.jenis-rhk');
+    Route::get('/gps-photos', [LaporanController::class, 'getGpsPhotos'])->name('laporan.gps-photos');
     Route::get('/laporan/{laporan}/download/pdf', [LaporanDownloadController::class, 'downloadPdf'])->name('laporan.download.pdf');
     Route::get('/laporan/{laporan}/download/docx', [LaporanDownloadController::class, 'downloadDocx'])->name('laporan.download.docx');
+
+    // Template
+    Route::get('/templates', [LaporanController::class, 'templates'])->name('laporan.templates');
+    Route::get('/templates/{laporan}/load', [LaporanController::class, 'loadTemplate'])->name('laporan.template.load');
+    Route::post('/laporan/{laporan}/save-as-template', [LaporanController::class, 'saveAsTemplate'])->name('laporan.template.save');
+    Route::delete('/templates/{laporan}', [LaporanController::class, 'destroyTemplate'])->name('laporan.template.destroy');
+
+    // GPS Photo
+    Route::get('/gps-photo', [GpsPhotoController::class, 'index'])->name('gps-photo.index');
+    Route::get('/gps-photo/gallery', [GpsPhotoController::class, 'gallery'])->name('gps-photo.gallery');
+    Route::post('/gps-photo', [GpsPhotoController::class, 'store'])->name('gps-photo.store');
+    Route::delete('/gps-photo/{gpsPhoto}', [GpsPhotoController::class, 'destroy'])->name('gps-photo.destroy');
 });
 
 // ─── Profile (semua role) ─────────────────────────────────────────────────────

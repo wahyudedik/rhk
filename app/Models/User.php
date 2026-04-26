@@ -62,6 +62,11 @@ class User extends Authenticatable
         return $this->hasMany(UserSubscription::class);
     }
 
+    public function gpsPhotos(): HasMany
+    {
+        return $this->hasMany(GpsPhoto::class);
+    }
+
     public function activeSubscription(): ?UserSubscription
     {
         return $this->subscriptions()
