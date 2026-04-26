@@ -1,6 +1,6 @@
 # Sistem Laporan ASN
 
-Aplikasi manajemen laporan untuk Aparatur Sipil Negara (ASN) berbasis Laravel 13 dengan sistem subscription dan multi-role.
+Aplikasi manajemen laporan untuk Aparatur Sipil Negara (ASN) berbasis Laravel 13 dengan sistem subscription dan multi-role. anajy
 
 ## 📋 Daftar Isi
 
